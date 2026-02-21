@@ -1,0 +1,156 @@
+# ===========================
+# Java
+# ===========================
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.rar
+
+# Java Heap Dumps
+*.hprof
+
+# Java crash logs
+hs_err_pid*
+replay_pid*
+
+# ===========================
+# Build Tools
+# ===========================
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Gradle
+.gradle/
+build/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+.gradletasknamecache
+
+# ===========================
+# IDEs
+# ===========================
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+.factorypath
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# NetBeans
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+nbactions.xml
+nb-configuration.xml
+
+# ===========================
+# Spring Boot
+# ===========================
+spring-shell.log
+application-local.properties
+application-local.yml
+
+# ===========================
+# Logs
+# ===========================
+logs/
+*.log
+*.log.*
+log/
+
+# ===========================
+# OS Generated
+# ===========================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# ===========================
+# Environment & Secrets
+# ===========================
+.env
+.env.local
+.env.*.local
+*.env
+secrets.properties
+secrets.yml
+secrets.yaml
+
+# ===========================
+# Docker
+# ===========================
+docker-compose.override.yml
+
+# ===========================
+# Test & Coverage
+# ===========================
+.jacoco/
+jacoco.exec
+coverage/
+test-results/
+surefire-reports/
+
+# ===========================
+# SonarQube
+# ===========================
+.sonar/
+.sonarqube/
+
+# ===========================
+# Misc
+# ===========================
+*.orig
+*.rej
+MANIFEST.MF
