@@ -129,7 +129,7 @@ jobs:
     name: Publish Diagrams to Repository
     runs-on: ubuntu-latest
     needs: [validate-diagrams, generate-diagrams, validate-adrs]
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
 
     steps:
       - name: Checkout code
