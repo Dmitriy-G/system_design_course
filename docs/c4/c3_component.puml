@@ -1,0 +1,67 @@
+@startuml C3_Components
+!define C4_URL https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
+!include C4_URL/C4_Component.puml
+
+title C3 - Order Service Components
+
+LAYOUT_WITH_LEGEND()
+
+' External containers
+Container_Ext(apiGateway, "API Gateway", "Spring", "Routes incoming requests")
+ContainerDb_Ext(orderDatabase, "Order Database", "PostgreSQL", "Stores orders and outbox events")
+ContainerDb_Ext(paymentDatabase, "Payment Database", "PostgreSQL", "Stores payments and outbox events")
+ContainerDb_Ext(cache, "Cache", "Redis", "Caches order status")
+Container_Ext(messageBroker, "Message Broker", "Apache Kafka", "Event streaming")
+Container_Ext(paymentGateway, "Payment Gateway", "Some gateway", "Payment processing")
+
+System_Boundary(orderService, "Order Service") {
+
+    ' API Layer
+    Component(orderController, "Order Controller", "Spring REST Controller", "Handles HTTP requests: create, update, cancel, get order")
+    Component(orderValidator, "Order Validator", "Spring Component", "Validates incoming order request payloads")
+
+    ' Application Layer
+    Component(orderApplicationService, "Order Application Service", "Spring Service", "Orchestrates order use cases and business workflows")
+    Component(paymentService, "Payment Service", "Spring Service", "Payment use cases and business workflows")
+    Component(emailService, "Email Service", "Spring Service", "Send data for email to email service")
+    Component(cacheService, "Cache Service", "Spring Cache", "Implements Cache-Aside pattern for order reads")
+
+    ' Domain Layer
+    Component(orderDomainService, "Order Domain Service", "Domain Service", "Core business rules: order state machine, pricing logic")
+    Component(orderAggregate, "Order Aggregate", "Domain Model", "Order entity with items, status, and business invariants")
+
+    ' Infrastructure Layer
+    Component(orderRepository, "Order Repository", "Spring Data JPA", "Persists and queries order data from PostgreSQL")
+    Component(paymentRepository, "Payment Repository", "Spring Data JPA", "Persists and queries payment data from PostgreSQL")
+    Component(outboxPublisher, "Outbox Publisher", "Spring Scheduled", "Polls outbox table and publishes pending events to Kafka")
+}
+
+' Inbound
+Rel(apiGateway, orderController, "Routes requests", "HTTPS/REST")
+
+' Controller layer
+Rel(orderController, orderValidator, "Validates request via")
+Rel(orderController, orderApplicationService, "Delegates to")
+
+' Application layer
+Rel(orderApplicationService, orderDomainService, "Applies business rules via")
+Rel(orderApplicationService, orderRepository, "Persists via")
+Rel(paymentService, paymentRepository, "Persist via")
+Rel(orderApplicationService, cacheService, "Reads cache via")
+Rel(orderApplicationService, paymentService, "Processes payment via")
+Rel(orderApplicationService, emailService, "Send email via")
+Rel(orderApplicationService, outboxPublisher, "Stores event via")
+
+' Domain layer
+Rel(orderDomainService, orderAggregate, "Operates on")
+
+' Infrastructure layer
+Rel(orderRepository, orderDatabase, "SQL queries", "JDBC")
+Rel(cacheService, cache, "Redis commands", "Redis Protocol")
+Rel(outboxPublisher, orderDatabase, "Reads outbox table", "JDBC")
+Rel(outboxPublisher, messageBroker, "Publishes events", "Kafka Protocol")
+Rel(emailService, messageBroker, "Publishes events with data for email", "Kafka Protocol")
+Rel(paymentRepository, paymentDatabase, "SQL queries", "JDBC")
+Rel(paymentService, paymentGateway, "HTTP calls", "HTTPS/REST")
+
+@enduml

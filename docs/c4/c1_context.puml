@@ -1,0 +1,24 @@
+@startuml C1_SystemContext
+!define C4_URL https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
+!include C4_URL/C4_Context.puml
+
+title C1 - Order System Context
+
+LAYOUT_WITH_LEGEND()
+
+' People
+Person(customer, "Customer", "The customer make an order")
+
+' Internal System
+System(orderSystem, "Order System", "Handles full order lifecycle: creation, payment, notifications")
+
+' External Systems
+System_Ext(paymentGatewayProvider, "Payment Gateway Provider", "Use main or reserved payment gateway and make payment")
+System_Ext(emailProvider, "Email Provider", "Sends email notifications")
+
+' Relationships
+Rel(customer, orderSystem, "Some UI call the payment system", "HTTPS")
+Rel(orderSystem, paymentGatewayProvider, "Processes payments", "HTTPS/REST")
+Rel(orderSystem, emailProvider, "Sends email notifications", "SMTP")
+
+@enduml

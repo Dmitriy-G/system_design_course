@@ -1,0 +1,59 @@
+@startuml C2_Containers
+!define C4_URL https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
+!include C4_URL/C4_Container.puml
+
+title C2 - Order System Containers
+
+LAYOUT_WITH_LEGEND()
+
+' People
+Person(customer, "Customer", "Places and tracks orders")
+
+' External Systems
+System_Ext(paymentGatewayProvider, "Payment Gateway", "Some provider service")
+System_Ext(emailProvider, "Email Provider", "Some provider service")
+
+System_Boundary(orderSystem, "Order System") {
+
+    ' Frontend
+    Container(webApp, "Web Application", "React", "SPA served to customers for placing and tracking orders")
+    Container(mobileApp, "Mobile Application", "Kotlin/Swift", "iOS and Android order tracking app")
+
+    ' Backend
+    Container(apiGateway, "API Gateway", "Java Spring Boot", "Routes requests, handles authentication and rate limiting")
+    Container(orderService, "Order Service (module)", "Java Spring Boot", "Core order management: create, update, cancel orders")
+    Container(paymentService, "Payment Service (module)", "Java Spring Boot", "Core payment flow and use the external payment gateway provider")
+
+    ' Data Stores
+    ContainerDb(orderDatabase, "Order Database", "PostgreSQL", "Stores orders and outbox events")
+    ContainerDb(paymentDatabase, "Payment Database", "PostgreSQL", "Stores payment information")
+    ContainerDb(cache, "Cache", "Redis", "Caches order status reads (Cache-Aside pattern)")
+
+    ' Messaging
+    Container(messageBroker, "Message Broker", "Apache Kafka", "Async event streaming between services")
+}
+
+' Customer interactions
+Rel(customer, webApp, "Uses", "HTTPS")
+Rel(customer, mobileApp, "Uses", "HTTPS")
+
+' Frontend to backend
+Rel(webApp, apiGateway, "API calls", "HTTPS/REST")
+Rel(mobileApp, apiGateway, "API calls", "HTTPS/REST")
+Rel(apiGateway, orderService, "Routes order requests", "HTTPS/REST")
+
+' Order Service dependencies
+Rel(orderService, orderDatabase, "Reads and writes", "JDBC")
+Rel(orderService, cache, "Reads and write order status and another cached info", "Redis Protocol")
+Rel(orderService, messageBroker, "Publishes events from outbound table", "Kafka Protocol")
+Rel(orderService, paymentService, "Processes payments", "HTTPS/REST")
+Rel(orderService, emailProvider, "Sends emails via external provider", "Kafka Protocol")
+
+' Payment Service dependencies
+Rel(paymentService, paymentGatewayProvider, "Processes payments", "HTTPS/REST")
+Rel(paymentService, paymentDatabase, "Reads and writes", "JDBC")
+Rel(paymentService, cache, "Reads cached info, like a receipts etc", "Redis Protocol")
+Rel(paymentService, messageBroker, "Publishes events from outbound table", "Kafka Protocol")
+
+
+@enduml

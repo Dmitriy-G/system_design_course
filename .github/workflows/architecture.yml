@@ -1,0 +1,154 @@
+name: Architecture Validation
+
+on:
+  push:
+    paths:
+      - 'docs/**'
+  pull_request:
+    paths:
+      - 'docs/**'
+
+jobs:
+
+  validate-diagrams:
+    name: Validate PlantUML C4 Diagrams
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Validate C1 Context diagram
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/docs:/workspace \
+            plantuml/plantuml -checkonly \
+            /workspace/c4/c1_context.puml
+          echo "C1 diagram is valid"
+
+      - name: Validate C2 Container diagram
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/docs:/workspace \
+            plantuml/plantuml -checkonly \
+            /workspace/c4/c2_containers.puml
+          echo "C2 diagram is valid"
+
+      - name: Validate C3 Component diagram
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/docs:/workspace \
+            plantuml/plantuml -checkonly \
+            /workspace/c4/c3_components.puml
+          echo "C3 diagram is valid"
+
+  generate-diagrams:
+    name: Generate Diagram Images
+    runs-on: ubuntu-latest
+    needs: validate-diagrams
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Create diagrams output directory
+        run: mkdir -p docs/c4/rendered
+
+      - name: Generate PNG diagrams
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/docs:/workspace \
+            plantuml/plantuml -tpng \
+            /workspace/c4/*.puml \
+            -output /workspace/c4/rendered
+
+      - name: Verify all diagrams generated
+        run: |
+          EXPECTED=3
+          COUNT=$(ls docs/c4/rendered/*.png 2>/dev/null | wc -l)
+          echo "Generated $COUNT diagram(s), expected $EXPECTED"
+          if [ "$COUNT" -lt "$EXPECTED" ]; then
+            echo "ERROR: Not all diagrams were generated"
+            exit 1
+          fi
+
+      - name: Upload diagrams as artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: c4-diagrams
+          path: docs/c4/rendered/
+          retention-days: 30
+
+  validate-adrs:
+    name: Validate ADR Documents
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Check ADR files exist
+        run: |
+          COUNT=$(ls docs/adr/ADR-*.md 2>/dev/null | wc -l)
+          echo "Found $COUNT ADR file(s)"
+          if [ "$COUNT" -lt 1 ]; then
+            echo "ERROR: No ADR files found"
+            exit 1
+          fi
+
+      - name: Validate ADR required sections
+        run: |
+          FAILED=0
+          for adr in docs/adr/ADR-*.md; do
+            echo "Validating $adr..."
+            for section in "Status" "Context" "Decision" "Consequences" "Alternatives" "Metrics"; do
+              if ! grep -q "## $section" "$adr"; then
+                echo "ERROR: Missing section '$section' in $adr"
+                FAILED=1
+              fi
+            done
+          done
+          if [ "$FAILED" -eq 1 ]; then
+            exit 1
+          fi
+          echo "All ADRs are valid"
+
+      - name: Check ADR status values are valid
+        run: |
+          VALID_STATUSES="Proposed|Accepted|Deprecated|Superseded"
+          for adr in docs/adr/ADR-*.md; do
+            STATUS=$(grep "## Status" -A1 "$adr" | tail -1 | tr -d ' ')
+            if ! echo "$STATUS" | grep -qE "$VALID_STATUSES"; then
+              echo "ERROR: Invalid status '$STATUS' in $adr"
+              exit 1
+            fi
+          done
+          echo "All ADR statuses are valid"
+
+  publish-diagrams:
+    name: Publish Diagrams to Repository
+    runs-on: ubuntu-latest
+    needs: [validate-diagrams, generate-diagrams, validate-adrs]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Generate final diagrams
+        run: |
+          mkdir -p docs/c4/rendered
+          docker run --rm \
+            -v ${{ github.workspace }}/docs:/workspace \
+            plantuml/plantuml -tpng \
+            /workspace/c4/*.puml \
+            -output /workspace/c4/rendered
+
+      - name: Commit diagrams to repository
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add architecture/diagrams/
+          git diff --staged --quiet || \
+            git commit -m "ci: regenerate C4 diagrams [skip ci]" && \
+            git push

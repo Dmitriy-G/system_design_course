@@ -1,0 +1,14 @@
+' Common styles and settings for all C4 diagrams
+
+!define C4_URL https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
+
+!include C4_URL/C4_Context.puml
+!include C4_URL/C4_Container.puml
+!include C4_URL/C4_Component.puml
+
+' Global styles
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam wrapWidth 200
+
+LAYOUT_WITH_LEGEND()
