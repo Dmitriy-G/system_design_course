@@ -73,7 +73,7 @@ jobs:
           fi
 
       - name: Upload diagrams as artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: c4-diagrams
           path: docs/c4/rendered/
@@ -89,7 +89,7 @@ jobs:
 
       - name: Check ADR files exist
         run: |
-          COUNT=$(ls docs/adr/ADR-*.md 2>/dev/null | wc -l)
+          COUNT=$(ls docs/adr/ADR-*.MD 2>/dev/null | wc -l)
           echo "Found $COUNT ADR file(s)"
           if [ "$COUNT" -lt 1 ]; then
             echo "ERROR: No ADR files found"
@@ -99,7 +99,7 @@ jobs:
       - name: Validate ADR required sections
         run: |
           FAILED=0
-          for adr in docs/adr/ADR-*.md; do
+          for adr in docs/adr/ADR-*.MD; do
             echo "Validating $adr..."
             for section in "Status" "Context" "Decision" "Consequences" "Alternatives" "Metrics"; do
               if ! grep -q "## $section" "$adr"; then
@@ -116,7 +116,7 @@ jobs:
       - name: Check ADR status values are valid
         run: |
           VALID_STATUSES="Proposed|Accepted|Deprecated|Superseded"
-          for adr in docs/adr/ADR-*.md; do
+          for adr in docs/adr/ADR-*.MD; do
             STATUS=$(grep "## Status" -A1 "$adr" | tail -1 | tr -d ' ')
             if ! echo "$STATUS" | grep -qE "$VALID_STATUSES"; then
               echo "ERROR: Invalid status '$STATUS' in $adr"
