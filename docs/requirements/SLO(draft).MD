@@ -8,6 +8,7 @@ Availability is the ability to complete the process within the specified time to
 
 Total availability: 99.9
 
+
 Allowed downtime / per month: 43 mins
 
 ### Measure method
