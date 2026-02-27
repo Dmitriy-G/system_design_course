@@ -4,7 +4,6 @@
 - Owners: Backend Team
 
 ## Status
-
 Accepted
 
 ## Context
