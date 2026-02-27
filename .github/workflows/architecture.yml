@@ -101,7 +101,7 @@ jobs:
           FAILED=0
           for adr in docs/adr/ADR-*.MD; do
             echo "Validating $adr..."
-            for section in "Status:" "Context" "Decision" "Consequences" "Alternatives" "Observability / Metrics"; do
+            for section in "Status" "Context" "Decision" "Consequences" "Alternatives" "Observability / Metrics"; do
               if ! grep -q "## $section" "$adr"; then
                 echo "ERROR: Missing section '$section' in $adr"
                 FAILED=1

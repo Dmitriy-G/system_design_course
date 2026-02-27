@@ -1,8 +1,11 @@
 # ADR-001 Primary architecture
 
-- Status: Accepted
 - Date: 2026-02-21
 - Owners: Backend Team
+
+## Status
+
+Accepted
 
 ## Context
 
