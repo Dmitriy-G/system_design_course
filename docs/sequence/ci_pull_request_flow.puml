@@ -1,0 +1,136 @@
+@startuml ci_pull_request_flow
+title Pull Request CI Pipeline Flow
+
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 10
+
+actor "Developer" as dev
+participant "GitHub" as github
+participant "validate-diagrams\njob" as diagrams
+participant "validate-adrs\njob" as adrs
+participant "unit-tests\njob" as unit
+participant "arch-tests\njob" as arch
+participant "generate-and-\npublish job" as publish
+database "Repository" as repo
+participant "PlantUML\nDocker" as plantuml
+
+== Developer pushes code ==
+
+dev -> repo : git push origin master
+repo -> github : trigger workflow\non push to master
+
+github -> github : check paths:\nsrc/**, architecture/**,\n.github/workflows/**
+
+alt no matching paths changed
+    github --> dev : pipeline skipped
+end
+
+== Parallel validation jobs ==
+
+github -> diagrams : trigger job
+github -> adrs : trigger job
+
+note over diagrams, adrs
+    run in parallel
+end note
+
+== Diagram Validation ==
+
+diagrams -> plantuml : docker run plantuml\n-checkonly c1_context.puml
+plantuml --> diagrams : valid / error
+
+diagrams -> plantuml : docker run plantuml\n-checkonly c2_containers.puml
+plantuml --> diagrams : valid / error
+
+diagrams -> plantuml : docker run plantuml\n-checkonly c3_components.puml
+plantuml --> diagrams : valid / error
+
+alt any diagram invalid
+    diagrams --> github : job FAILED
+    github --> dev : ❌ PR blocked\nfix diagram syntax
+end
+
+diagrams --> github : job PASSED ✅
+
+== ADR Validation ==
+
+adrs -> repo : read docs/adr/ADR-*.md
+adrs -> adrs : check required sections:\nStatus, Context, Decision,\nConsequences, Alternatives, Metrics
+
+alt missing section
+    adrs --> github : job FAILED
+    github --> dev : ❌ PR blocked\nfix ADR document
+end
+
+adrs -> adrs : validate status values:\nProposed|Accepted|\nDeprecated|Superseded
+
+alt invalid status
+    adrs --> github : job FAILED
+    github --> dev : ❌ PR blocked\ninvalid ADR status
+end
+
+adrs --> github : job PASSED ✅
+
+== Test jobs (after validation) ==
+
+github -> unit : trigger unit-tests job
+github -> arch : trigger arch-tests job
+
+note over unit, arch
+    run in parallel
+    after validate jobs pass
+end note
+
+== Unit Tests ==
+
+unit -> unit : chmod +x gradlew
+unit -> unit : ./gradlew unitTest --info
+
+unit -> unit : OrderControllerTest
+unit -> unit : OrderApplicationServiceTest
+unit -> unit : OrderDomainServiceTest
+
+alt any test fails
+    unit --> github : job FAILED
+    unit -> repo : upload test report artifact
+    github --> dev : ❌ PR blocked\nfix failing unit tests
+end
+
+unit -> repo : upload test-results artifact
+unit --> github : job PASSED ✅
+
+== Architecture Tests ==
+
+arch -> arch : chmod +x gradlew
+arch -> arch : ./gradlew archTest --info
+
+arch -> arch : LayerDependencyTest\n(domain has no infra deps)
+arch -> arch : NamingConventionTest\n(Controller/Service/Repository)
+arch -> arch : PackageRuleTest\n(no cross-module access)
+
+alt arch rule violated
+    arch --> github : job FAILED
+    arch -> repo : upload arch-test-results artifact
+    github --> dev : ❌ PR blocked\nfix architecture violation
+end
+
+arch -> repo : upload arch-test-results artifact
+arch --> github : job PASSED ✅
+
+== Publish Diagrams (master only) ==
+
+github -> publish : trigger only if\nall 4 jobs passed\nAND branch = master
+
+publish -> plantuml : generate PNG diagrams
+plantuml --> publish : C1_SystemContext.png\nC2_Containers.png\nC3_Components.png
+
+publish -> repo : git commit\n"ci: regenerate C4 diagrams [skip ci]"
+repo --> publish : committed
+
+publish --> github : job PASSED ✅
+
+== Final result ==
+
+github --> dev : ✅ All checks passed\nPR ready to merge
+
+@enduml

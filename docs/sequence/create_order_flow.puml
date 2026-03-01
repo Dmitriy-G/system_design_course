@@ -1,0 +1,95 @@
+@startuml create_order_flow
+title Create Order Flow
+
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 10
+skinparam sequenceParticipant underline
+
+actor "Customer" as customer
+participant "API Gateway" as gateway
+participant "OrderController" as controller
+participant "OrderApplicationService" as appService
+participant "OrderDomainService" as domainService
+participant "OrderRepository" as repository
+participant "CacheService" as cache
+participant "OutboxPublisher" as outbox
+database "PostgreSQL" as db
+database "Redis" as redis
+queue "Kafka" as kafka
+participant "PaymentGateway" as payment
+
+== Order Submission ==
+
+customer -> gateway : POST /api/v1/orders\n{customerId, productId, quantity}
+gateway -> controller : route request
+controller -> controller : validate request payload
+
+alt request is invalid
+    controller --> gateway : 400 Bad Request
+    gateway --> customer : 400 Bad Request\n{validation errors}
+end
+
+== Order Processing ==
+
+controller -> appService : createOrder(command)
+appService -> domainService : validateBusinessRules(command)
+
+alt business rule violation
+    domainService --> appService : throw OrderValidationException
+    appService --> controller : throw OrderValidationException
+    controller --> gateway : 422 Unprocessable Entity
+    gateway --> customer : 422 Unprocessable Entity\n{error details}
+end
+
+domainService --> appService : rules passed
+
+== Payment Processing ==
+
+appService -> payment : processPayment(orderId, amount)
+
+alt payment failed
+    payment --> appService : PaymentFailedException
+    appService --> controller : throw PaymentFailedException
+    controller --> gateway : 402 Payment Required
+    gateway --> customer : 402 Payment Required
+end
+
+payment --> appService : paymentConfirmed
+
+== Persistence (Outbox Pattern) ==
+
+appService -> db : BEGIN TRANSACTION
+appService -> repository : save(order)
+repository -> db : INSERT INTO orders
+appService -> outbox : saveEvent(OrderCreatedEvent)
+outbox -> db : INSERT INTO order_outbox\n{status: PENDING}
+appService -> db : COMMIT TRANSACTION
+db --> appService : transaction committed
+
+== Cache Update ==
+
+appService -> cache : invalidate(orderId)
+cache -> redis : DEL order:status:{orderId}
+redis --> cache : ok
+cache --> appService : invalidated
+
+== Response ==
+
+appService --> controller : OrderResponse
+controller --> gateway : 201 Created\n{orderId, status: PENDING}
+gateway --> customer : 201 Created\n{orderId, status: PENDING}
+
+== Async Event Publishing (Outbox Poller) ==
+
+note over outbox : runs every 100ms\nin background thread
+
+outbox -> db : SELECT * FROM order_outbox\nWHERE status = PENDING
+db --> outbox : pending events
+
+outbox -> kafka : publish OrderCreatedEvent\nto order.events topic
+kafka --> outbox : ack
+
+outbox -> db : UPDATE order_outbox\nSET status = PUBLISHED
+db --> outbox : updated
+
+@enduml

@@ -3,6 +3,8 @@
 # ===========================
 ARCH_DIR        = docs/c4
 RENDERED_DIR    = docs/c4/rendered
+SEQUENCE_DIR 	= docs/sequence
+SEQUENCE_RENDERED_DIR = docs/sequence/rendered
 ADR_DIR         = docs/adr
 PLANTUML_IMAGE  = plantuml/plantuml
 DOCKER_RUN      = docker run --rm -v $(PWD)/docs:/workspace $(PLANTUML_IMAGE)
@@ -45,6 +47,10 @@ diagrams-validate:
 	$(DOCKER_RUN) -checkonly /workspace/c4/c2_containers.puml
 	@echo "Validating C3 diagram..."
 	$(DOCKER_RUN) -checkonly /workspace/c4/c3_components.puml
+	@echo "Validating order flow sequence..."
+	$(DOCKER_RUN) -checkonly /workspace/sequence/create_order_flow.puml
+	@echo "Validating CI flow sequence..."
+	$(DOCKER_RUN) -checkonly /workspace/sequence/ci_pull_request_flow.puml
 	@echo "All diagrams are valid"
 
 diagrams-generate: diagrams-validate
@@ -53,6 +59,14 @@ diagrams-generate: diagrams-validate
 	$(DOCKER_RUN) -tpng /workspace/c4/*.puml -output /workspace/c4/rendered
 	@echo "Diagrams generated in $(RENDERED_DIR)"
 	@ls -la $(RENDERED_DIR)
+
+sequence-generate: diagrams-validate
+	@echo "Generating sequence diagrams..."
+	@mkdir -p $(SEQUENCE_RENDERED_DIR)
+	$(DOCKER_RUN) -tpng /workspace/sequence/*.puml \
+		-output /workspace/sequence/rendered
+	@echo "Done"
+	@ls -la $(SEQUENCE_RENDERED_DIR)
 
 diagrams-clean:
 	@echo "Removing generated diagrams..."
@@ -99,7 +113,7 @@ clean:
 # ===========================
 # Full CI Pipeline (local)
 # ===========================
-ci: diagrams-validate adr-validate diagrams-generate
+ci: diagrams-validate adr-validate diagrams-generate sequence-generate test
 	@echo ""
 	@echo "CI pipeline passed successfully"
 
