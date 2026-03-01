@@ -89,6 +89,12 @@ build:
 test:
 	./gradlew test
 
+test-unit:
+	./gradlew unitTest
+
+test-arch:
+	./gradlew archTest
+
 run:
 	./gradlew bootRun
 

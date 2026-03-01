@@ -1,0 +1,7 @@
+package com.example.online.shop.payment.service;
+
+import org.springframework.stereotype.Service;
+
+@Service
+public class PaymentApiService {
+}

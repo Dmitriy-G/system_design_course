@@ -1,12 +1,16 @@
-name: Architecture Validation
+name: CI/CD pipeline
 
 on:
   push:
     paths:
       - 'docs/**'
+      - 'src/**'
+      - '.github/workflows/**'
   pull_request:
     paths:
       - 'docs/**'
+      - 'src/**'
+      - '.github/workflows/**'
 
 permissions:
   contents: write
@@ -40,6 +44,54 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate ADRs
         run: make adr-validate
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Run unit tests
+        run: make test-unit
+
+      - name: Upload unit test results
+        uses: actions/upload-artifact@v4
+        if: always()   # ← upload even if tests fail
+        with:
+          name: unit-test-results
+          path: build/reports/tests/unitTest/
+          retention-days: 7
+
+  arch-tests:
+    name: Architecture Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Run architecture tests
+        run: make test-arch
+
+      - name: Upload arch test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arch-test-results
+          path: build/reports/tests/archTest/
+          retention-days: 7
 
   publish-diagrams:
     name: Publish Diagrams to Repository
