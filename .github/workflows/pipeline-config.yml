@@ -26,7 +26,7 @@ jobs:
       - name: Validate diagrams
         run: make diagrams-validate
 
-  generate-diagrams:
+  diagrams-generate:
     name: Generate Diagram Images
     runs-on: ubuntu-latest
     needs: validate-diagrams
@@ -34,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate ADRs
-        run: make generate-diagrams
+        run: make diagrams-generate
 
   sequence-generate:
     name: Generate Sequence Images
@@ -82,7 +82,7 @@ jobs:
   publish-diagrams:
     name: Publish Diagrams to Repository
     runs-on: ubuntu-latest
-    needs: [validate-diagrams, generate-diagrams, sequence-generate, validate-adrs]
+    needs: [validate-diagrams, diagrams-generate, sequence-generate, validate-adrs]
     if: github.ref == 'refs/heads/master'
 
     steps:
