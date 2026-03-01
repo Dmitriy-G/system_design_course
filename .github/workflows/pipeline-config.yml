@@ -36,7 +36,7 @@ jobs:
       - name: Validate ADRs
         run: make generate-diagrams
 
-  generate-sequence:
+  sequence-generate:
     name: Generate Sequence Images
     runs-on: ubuntu-latest
     needs: validate-diagrams
@@ -44,7 +44,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Generate sequence
-        run: make generate-sequence
+        run: make sequence-generate
 
   validate-adrs:
     name: Validate ADR Documents
