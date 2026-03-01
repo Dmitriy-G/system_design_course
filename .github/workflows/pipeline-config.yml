@@ -92,6 +92,9 @@ jobs:
       - name: Generate final diagrams
         run: make diagrams-generate
 
+      - name: Generate final sequences
+        run: make sequence-generate
+
       - name: Commit diagrams to repository
         run: |
           git config user.name "github-actions"
