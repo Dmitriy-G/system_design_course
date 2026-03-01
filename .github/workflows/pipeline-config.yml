@@ -45,8 +45,8 @@ jobs:
       - name: Validate ADRs
         run: make adr-validate
 
-  unit-tests:
-    name: Unit Tests
+  tests:
+    name: Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -58,39 +58,15 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Run unit tests
-        run: make test-unit
+      - name: Run tests
+        run: make test
 
-      - name: Upload unit test results
+      - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()   # ← upload even if tests fail
         with:
           name: unit-test-results
-          path: build/reports/tests/unitTest/
-          retention-days: 7
-
-  arch-tests:
-    name: Architecture Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: gradle
-
-      - name: Run architecture tests
-        run: make test-arch
-
-      - name: Upload arch test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: arch-test-results
-          path: build/reports/tests/archTest/
+          path: build/reports/tests/
           retention-days: 7
 
   publish-diagrams:
